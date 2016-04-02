@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script>
+    window.$ = window.jQuery = require('jquery');
+    require('bootstrap');
+    </script>
+    <script src="geometry.js"></script>
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <title>Geometry Toolbox</title>
+  </head>
+
+  <body onload="loaded()">
+
+    <h2>Geometry toolbox</h2>
+    <div class="row">
+    <div class="col-sm-8">
+    <canvas width="800" height="800" style="width:100%; height:100%; border: 1px solid black;" id="canvas">
+    </canvas>
+  </div>
+
+
+    <div class="col-sm-4">
+      <ul class="nav nav-tabs">
+        <li class="active"><a data-toggle="tab" href="#home">Points</a></li>
+        <li><a data-toggle="tab" href="#menu1">Segments</a></li>
+      </ul>
+      <div class="tab-content">
+      <div id="home" class="tab-pane fade in active">
+        <textarea class ="form-control" id ="input" rows="20" onkeyup="parseAndDraw()"></textarea>
+      </div>
+      <div id="menu1" class="tab-pane fade">
+        <textarea class ="form-control" id ="segs" rows="20" onkeyup="parseAndDraw()"></textarea>
+      </div>
+      <br>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="loadRandom(10)">Load 10 points</button>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="clearPoints()">Clear points</button>
+      <br>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="loadRandomSegs(10)">Load 10 segs</button>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="clearPoints()">Clear segs</button>
+      <br>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="connectAll()">Connect all</button>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="connectAdj()">Connect adjacent</button>
+      <br>
+      <button type="button" class = "btn btn-primary btn-xs" onclick="hull()">Convex hull</button>
+
+    </div>
+    </div>
+  </div>
+
+    <script>
+    mouseDown = false;
+    xrel = 400; yrel = 400;
+    segmentsArray = [];
+    pointsArray = [];
+
+    function loaded()
+    {
+      ctx = document.getElementById("canvas").getContext("2d");
+      $("#canvas").on("mousedown",function()
+    {
+      console.log("md!");
+      mouseDown = true;
+      mouseDownX = event.pageX;
+      mouseDownY = event.pageY;
+    });
+    $("#canvas").on("mousemove",function()
+    {
+      if (mouseDown)
+      {
+        xrel = xrel - mouseDownX + event.pageX;
+        yrel = yrel - mouseDownY + event.pageY;
+        mouseDownX = event.pageX;
+        mouseDownY = event.pageY;
+        drawEverything();
+      }
+    });
+    $("#canvas").on("mouseup",function(){mouseDown = false;});
+    drawAxes();
+    }
+
+    function drawEverything()
+    {
+      ctx.clearRect(0,0,800,800);
+      for (var i=0;i<pointsArray.length; i++)
+      {
+        drawPoint(pointsArray[i]);
+      }
+      for (var i=0;i<segmentsArray.length; i++)
+      {
+        drawSegment(segmentsArray[i]);
+      }
+      drawAxes();
+    }
+
+    function drawSegment(s)
+    {
+      ctx.beginPath();
+      ctx.moveTo(s.point1.x+xrel,-s.point1.y+yrel);
+      ctx.lineTo(s.point2.x+xrel,-s.point2.y+yrel);
+      ctx.stroke();
+    }
+
+    function drawPoint(point)
+    {
+      console.log(point.x+xrel + " " + point.y+yrel);
+      ctx.fillStyle = "#000000";
+      ctx.beginPath();
+      ctx.arc(point.x + xrel, -point.y + yrel,2,0,2*Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function parseAndDraw()
+    {
+       var s = $("#input").val();
+       var splitArray =  s.trim().split(/\s+/);
+       if (splitArray.length % 2 == 0)
+       {
+        pointsArray = [];
+        for (var i=0;i<splitArray.length;i+=2)
+          pointsArray[i/2] = new Point(splitArray[i],splitArray[i+1]);
+        drawEverything();
+       }
+
+       s = $("#segs").val();
+       splitArray =  s.trim().split(/\s+/);
+       if (splitArray.length % 4 == 0 && splitArray.length / 4 != segmentsArray.length)
+       {
+        segmentsArray = [];
+        for (var i=0;i<splitArray.length;i+=2)
+          segmentsArray[i/4] = new Segment(new Point(splitArray[i],splitArray[i+1]),
+                                          new Point(splitArray[i+2],splitArray[i+3]));
+        drawEverything();
+       }
+    }
+
+    /////////////////////////////////////////////
+    // WRITE COMMANDS
+    /////////////////////////////////////////////
+
+    function writeSegments()
+    {
+      var ret = "";
+      for (i=0;i<segmentsArray.length;i++)
+        ret += segmentsArray[i].point1.x + " " + segmentsArray[i].point1.y + " "
+          + segmentsArray[i].point2.x + " " + segmentsArray[i].point2.y + "\n";
+      return ret;
+    }
+
+    function writePoints()
+    {
+      var ret = "";
+      for (i=0;i<pointsArray.length;i++)
+        ret += pointsArray[i].x + " " + pointsArray[i].y + "\n";
+      return ret;
+    }
+
+    /////////////////////////////////////////////
+    // COMMANDS
+    /////////////////////////////////////////////
+
+    function connectAll()
+    {
+      segmentsArray = [];
+      for (var i = 0 ; i < pointsArray.length; i++)
+        for (var j = i+1; j < pointsArray.length; j++)
+        {
+          console.log(i + " " + j + "!" + pointsArray[j].x + " " + pointsArray[j].y);
+          segmentsArray.push(new Segment(pointsArray[i],pointsArray[j],"#000000"));
+        }
+      $("#segs").val(writeSegments());
+      drawEverything();
+    }
+
+    function connectAdj()
+    {
+      segmentsArray = [];
+      for (var i = 0 ; i < pointsArray.length; i++)
+      {
+          j = i+1;
+          if (j==pointsArray.length)
+            j = 0;
+          segmentsArray.push(new Segment(pointsArray[i],pointsArray[j],"#000000"));
+      }
+      $("#segs").val(writeSegments());
+      drawEverything();
+    }
+
+    function loadRandom(number)
+    {
+      for (var i = 0 ;i<number;i++)
+      {
+        pointsArray.push(new Point(-300 + Math.floor(Math.random()*600), -300 + Math.floor(Math.random()*600) ));
+      }
+      $("#input").val(writePoints());
+      $("#input").trigger("keyup");
+    }
+
+    function loadRandomSegs(number)
+    {
+      for (var i = 0 ;i<number;i++)
+      {
+        segmentsArray.push(new Segment(new Point(-300 + Math.floor(Math.random()*600), -300 + Math.floor(Math.random()*600) ),new Point(-300 + Math.floor(Math.random()*600), -300 + Math.floor(Math.random()*600) )));
+      }
+      $("#segs").val(writeSegments());
+      $("#segs").trigger("keyup");
+      drawEverything();
+    }
+
+    function clearPoints()
+    {
+      pointsArray = [];
+      $("#input").val("");
+      drawEverything();
+    }
+
+    function hull()
+    {
+      pointsArray = convexHull(pointsArray);
+      $("#input").val(writePoints());
+      drawEverything();
+    }
+
+    function drawAxes()
+    {
+      drawSegment(new Segment(new Point(-800,0), new Point(800,0)));
+      drawSegment(new Segment(new Point(0,-800), new Point(0,800)));
+    }
+
+    </script>
+  </body>
+</html>

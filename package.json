@@ -1,0 +1,24 @@
+{
+  "name": "geometry-toolbox",
+  "version": "0.1.0",
+  "description": "A lightweight geometry toolbox built around Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atom/electron-quick-start.git"
+  },
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial"
+  ],
+  "author": "Petru Dimitriu",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron-prebuilt": "^0.36.0"
+  }
+}
